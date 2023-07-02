@@ -6,7 +6,6 @@ This repository contains submodules for the following projects:
 - microgames
 - micronotif-balance
 - microsockets
-- mikromonte-client
 
 ## Cloning the Repository
 
