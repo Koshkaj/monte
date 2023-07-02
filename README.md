@@ -25,3 +25,10 @@ git push
 ## To run, do this 
 
 `make full`
+
+## Technologies used
+
+- Python
+- Golang
+- gRPC
+- Docker
