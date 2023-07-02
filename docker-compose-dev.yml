@@ -1,0 +1,133 @@
+version: "3.8"
+
+services:
+  websocket:
+    image: monte_ws_dev:latest
+    container_name: monte_be
+    volumes:
+      - ./microsockets/src:/app
+    build:
+      context: ./microsockets/src
+      dockerfile: DockerfileDev
+    command: ["air", "-c", "air.toml"]
+    networks:
+      - monte_network
+    restart: unless-stopped
+    # env_file:
+    #   - src/.env
+    depends_on:
+      - redis_ecp
+      - games
+
+  api:
+    container_name: monte_api
+    image: monte_api:latest
+    build:
+      context: ./microapi/backend
+    command: bash -c "aerich upgrade && uvicorn core.main:app --host 0.0.0.0 --port 8080 --reload"
+    volumes:
+      - "./microapi/backend:/code"
+    env_file:
+      - ./microapi/backend/.env
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    networks:
+      - monte_network
+
+  redis_ecp:
+    container_name: monte_redis_ecp
+    image: "redis:alpine"
+    command: >
+      sh -c '
+          redis-server &
+          sleep 5 &&
+          redis-cli SET CURRENT_ROULETTE_ROUND 1000 &&
+          redis-cli SET ROULETTE_PUBLIC_SEED 9088149294 &&
+          redis-cli SET ROULETTE_PRIVATE_SEED 274391412683be315d1755aca4dfb5708b24692eb5668efc68ececec66e21e0e &&
+          redis-cli SET CURRENT_COINFLIP_ROUND 1000 &&
+          # Additional key-setting commands here
+          tail -f /dev/null
+        '
+    volumes:
+      - redis_ecp_data:/data
+    networks:
+      - monte_network
+
+  redis_nbc:
+    container_name: monte_redis_nbc
+    image: "redis:alpine"
+    volumes:
+      - redis_nbc_data:/data
+    networks:
+      - monte_network
+
+  mongo:
+    image: mongo:latest
+    container_name: monte_mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: pass
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - monte_network
+  postgres:
+    container_name: monte_postgres
+    image: postgres:13
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    env_file:
+      - ./microapi/backend/.env
+    networks:
+      - monte_network
+
+  games:
+    image: monte_games:latest
+    build:
+      context: ./microgames
+    container_name: monte_games
+    command: ["bash", "-c", "sleep 8 && python main.py"]
+    depends_on:
+      - redis_ecp
+      - mongo
+    networks:
+      - monte_network
+
+  notifbalance:
+    image: monte_notifbalance:latest
+    build:
+      context: ./micronotif-balance
+    container_name: monte_notifbalance
+    command: ["bash", "-c", "python main.py"]
+    depends_on:
+      - websocket
+      - redis_nbc
+      - postgres
+    networks:
+      - monte_network
+
+  nginx:
+    container_name: monte_nginx
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    depends_on:
+      - websocket
+      - api
+    volumes:
+      - ./microapi/nginx/dev.conf:/etc/nginx/nginx.conf:ro
+    restart: unless-stopped
+    networks:
+      - monte_network
+
+
+networks:
+  monte_network:
+    driver: bridge
+
+volumes:
+  redis_ecp_data:
+  redis_nbc_data:
+  mongodb_data:
+  pg_data:

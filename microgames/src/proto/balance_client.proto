@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+package balance;
+
+service Balance {
+  rpc ConfirmBet (ConfirmBetRequest) returns (ConfirmBetResponse);
+  rpc CommitBettersBalance (CommitBettersBalanceRequest) returns (CommitBettersBalanceResponse);
+  rpc ValidateToken (TokenValidateRequest) returns (StandardResponse);
+  rpc CommitBettersCoinflip (CommitBettersCoinflipRequest) returns (CommitBettersBalanceResponse);
+}
+
+message ConfirmBetRequest {
+  string token = 1;
+  uint32 bet_amount = 2;
+  optional bool add_xp = 3;
+  optional bool refund = 4;
+}
+
+message UserBalanceXPData {
+  string user_id = 1;
+  uint32 balance = 2;
+  uint32 xp = 3;
+}
+
+message ConfirmBetResponse {
+  bool success = 1;
+  UserBalanceXPData data = 2;
+  string error = 4;
+}
+
+message UserBetInfo {
+  string user_id = 1;
+  int32 amount = 2;
+  uint32 xp = 3;
+}
+
+
+message CommitBettersBalanceRequest {
+  repeated UserBetInfo winners = 1;
+  repeated UserBetInfo losers = 2;
+}
+
+message CommitBettersBalanceResponse {
+  bool success = 1;
+  repeated UserBalanceXPData data = 2;
+  string error = 3;
+}
+
+message CommitBettersCoinflipRequest {
+  UserBetInfo winner = 1;
+  UserBetInfo loser = 2;
+}
+
+message TokenValidateRequest {
+  string token = 1;
+  optional uint32 bet_amount = 2;
+}
+
+message StandardResponse {
+  bool success = 1;
+  optional string data = 2;
+  string error = 3;
+}

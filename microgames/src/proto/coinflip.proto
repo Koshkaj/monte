@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package coinflip;
+
+service Coinflip {
+  rpc CreateGame (CreateGameRequest) returns (StandardResponse);
+  rpc AcceptChallenge (AcceptChallengeRequest) returns (StandardResponse);
+  rpc CancelGame (CancelGameRequest) returns (StandardResponse);
+}
+
+message StandardResponse {
+  bool success = 1;
+  optional string data = 2;
+  string error = 3;
+}
+
+message CreateGameRequest {
+  uint32  bet_amount = 1;
+  uint32  side = 2;
+  string token = 3;
+}
+
+message AcceptChallengeRequest {
+  uint64 round_id = 1;
+  string token = 2;
+}
+
+message CancelGameRequest {
+  uint64 round_id = 1;
+  string token = 2;
+}

@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package roulette;
+
+service Roulette {
+  rpc PlaceBet (PlaceBetRequest) returns (StandardResponse);
+  rpc GetState (EmptyRequest) returns (StandardResponse);
+}
+
+message EmptyRequest {}
+
+message PlaceBetRequest {
+  string token = 1;
+  string coin = 2;
+  uint32 amount = 3;
+  uint64 round_id = 4;
+}
+
+message StandardResponse {
+  bool success = 1;
+  optional string data = 2;
+  string error = 3;
+}

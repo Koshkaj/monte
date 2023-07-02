@@ -1,0 +1,51 @@
+version: "3.3"
+
+services:
+  backend: &be
+    container_name: micro_backend
+    build:
+      context: ./backend
+    command: bash -c "aerich migrate && aerich upgrade && uvicorn core.main:app --host 0.0.0.0 --port 8080 --reload"
+    volumes:
+      - "./backend:/code"
+    env_file:
+      - ./backend/.env
+    ports:
+      - "8080:8080"
+    networks:
+      - main
+    restart: unless-stopped
+    depends_on:
+      - db
+
+
+  db:
+    container_name: micro_db
+    image: postgres:13
+    networks:
+      - main
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    env_file:
+      - ./backend/.env
+    ports:
+      - "5432:5432"
+
+  redis_nbc:
+    container_name: micro_redis_nbc
+    image: "redis:alpine"
+    volumes:
+      - redis_data:/data
+    ports:
+      - "7777:6379"
+    networks:
+      - main
+
+
+networks:
+    main:
+      driver: bridge
+
+volumes:
+  pg_data:
+  redis_data:

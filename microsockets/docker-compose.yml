@@ -1,0 +1,80 @@
+version: "3.8"
+
+services:
+  backend:
+    image: monte_ws:latest
+    container_name: monte_be
+    build:
+      context: ./src
+      dockerfile: DockerfileDev
+    command: "air"
+    volumes:
+      - ./src:/app
+    networks:
+      - main
+    restart: unless-stopped
+    # env_file:
+    #   - micro-core/.env
+    ports:
+     - "8080:8080"
+    # labels:
+    #   - "traefik.enable=true"
+    #   - "traefik.http.routers.backend.rule=PathPrefix(`/`) && Host(`monte.localhost`)"
+    #   - "traefik.http.routers.backend.entrypoints=web"
+    depends_on:
+      - redis
+
+  redis:
+    container_name: monte_redis
+    image: "redis:alpine"
+    volumes:
+      - redis_data:/data
+    networks:
+      - main
+  
+  mongo:
+    image: mongo:latest
+    container_name: monte_mongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: pass
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - main
+
+  microgames:
+    image: microgames:latest
+    container_name: monte_games
+    command: ["bash", "-c", "python main.py"]
+    networks:
+      - main
+    depends_on:
+      - backend
+      - redis
+      - mongo
+
+
+  # proxy:
+  #   image: traefik:v2.9.6
+  #   command:
+  #     - "--api.insecure=true"
+  #     - "--providers.docker=true"
+  #     - "--providers.docker.exposedbydefault=false"
+  #     - "--entrypoints.web.address=:80"
+  #   ports:
+  #     - "80:80"
+  #     - "8080:8080"
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #   networks:
+  #     - main
+
+networks:
+  main:
+    driver: bridge
+
+volumes:
+  redis_data:
+  mongodb_data:
+

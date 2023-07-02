@@ -1,0 +1,58 @@
+version: "3.3"
+
+services:
+  backend: &be
+    build:
+      context: ./backend
+    command: bash -c "sleep 10 && aerich upgrade && gunicorn -w 4 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8080 core.main:app"
+    volumes:
+      - "./backend:/code"
+    env_file:
+      - ./backend/.env
+    expose:
+      - 8080
+    networks:
+      - main
+    restart: unless-stopped
+    depends_on:
+      - db
+
+  nginx:
+    container_name: micro_nginx
+    build:
+      context: ./nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    volumes:
+      - ./nginx/prod.conf:/etc/nginx/nginx.conf:ro
+    restart: unless-stopped
+    networks:
+      - main
+
+  db:
+    container_name: micro_db
+    image: postgres:13
+    networks:
+      - main
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    env_file:
+      - ./backend/.env
+
+  redis:
+    container_name: micro_redis
+    image: "redis:alpine"
+    volumes:
+      - redis_data:/data
+    networks:
+      - main
+
+networks:
+  main:
+    driver: bridge
+
+volumes:
+  pg_data:
+  redis_data:
